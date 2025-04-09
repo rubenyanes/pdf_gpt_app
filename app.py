@@ -5,6 +5,11 @@ import base64
 from PIL import Image
 from functions import process_pdfs_in_folder
 from io import BytesIO
+import tempfile
+import json
+
+# ---------------------- Configurazione della pagina ----------------------
+st.set_page_config(page_title="Estrazione Tecnica", layout="wide")
 
 # ---------------------- Reset dello stato se l'elaborazione è stata fermata ----------------------
 if st.session_state.get('processing_stopped', False):
@@ -12,9 +17,6 @@ if st.session_state.get('processing_stopped', False):
     for key in keys_to_reset:
         if key in st.session_state:
             del st.session_state[key]
-
-# ---------------------- Configurazione della pagina ----------------------
-st.set_page_config(page_title="Estrazione Tecnica", layout="wide")
 
 # ---------------------- Stile custom e logo ----------------------
 st.markdown("""
@@ -64,6 +66,23 @@ st.markdown("<div class='centered-text'>Estrai automaticamente i dati tecnici (S
 # ---------------------- Inputs utente ----------------------
 folder_path = st.text_input("📂 Inserisci il percorso della cartella con i PDF", placeholder="C:\\Percorso\\Cartella\\PDF")
 
+# ---------------------- Caricamento credenziali Google Vision ----------------------
+st.markdown("🔐 **Carica il file di credenziali JSON di Google Cloud Vision**")
+uploaded_cred = st.file_uploader("Seleziona il file .json delle credenziali", type=["json"])
+
+if uploaded_cred is not None:
+    try:
+        creds_data = json.load(uploaded_cred)
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as tmpfile:
+            json.dump(creds_data, tmpfile)
+            tmpfile.flush()
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmpfile.name
+        st.success("✅ Credenziali caricate correttamente!")
+    except Exception as e:
+        st.error(f"❌ Errore nel caricamento delle credenziali: {e}")
+else:
+    st.warning("⚠️ Devi caricare il file delle credenziali per poter usare Google Vision OCR.")
+
 st.markdown("🔑 **OpenAI Api key** (https://platform.openai.com/api-keys)")
 openai_key = st.text_input("Inserisci la tua API Key", type="password")
 
@@ -92,13 +111,13 @@ with col1:
 with col2:
     if st.button("🛑 Ferma Elaborazione"):
         st.session_state['stop_process'] = True
-        st.session_state['start_process'] = False  # resetta anche start
-        st.session_state['processing_stopped'] = True  # flag per ripulire lo stato
+        st.session_state['start_process'] = False
+        st.session_state['processing_stopped'] = True
 
 # ---------------------- Logica di elaborazione ----------------------
 if st.session_state.get('start_process', False):
-    if not folder_path or not openai_key:
-        st.error("Inserisci una cartella valida e la tua API key.")
+    if not folder_path or not openai_key or not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        st.error("❌ Devi inserire la cartella, la API key di OpenAI e caricare le credenziali Google.")
         st.session_state['start_process'] = False
     else:
         with st.spinner("Elaborazione dei PDF in corso..."):
@@ -147,4 +166,4 @@ if st.session_state.get('start_process', False):
                 st.warning(str(e))
                 progress_placeholder.markdown("### ⛔ Elaborazione interrotta")
 
-    st.session_state['start_process'] = False
+        st.session_state['start_process'] = False

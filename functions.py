@@ -2,7 +2,6 @@ import os
 import fitz
 import numpy as np
 from PIL import Image
-from paddleocr import PaddleOCR
 import pandas as pd
 import openai
 import base64
@@ -11,9 +10,8 @@ import json
 import gc
 import re
 import unicodedata
+from google.cloud import vision
 
-
-# Paso 1
 def pdf_to_images(pdf_path):
     images = []
     try:
@@ -26,7 +24,6 @@ def pdf_to_images(pdf_path):
         print(f"❌ Errore durante l'elaborazione di {pdf_path}: {e}")
     return images
 
-# Paso 2
 def normalize_text(text):
     text = unicodedata.normalize('NFD', text)
     text = text.encode('ascii', 'ignore').decode("utf-8")
@@ -35,22 +32,27 @@ def normalize_text(text):
 def keyword_regex_pattern(keyword):
     keyword = re.escape(keyword)
     keyword = keyword.replace(r'\ ', r'[\W_]*')
-    return keyword
+    return re.compile(keyword, re.IGNORECASE)
 
-def rotate_and_score_pages_lowres(pil_images, keywords, ocr):
+def rotate_and_score_pages_lowres(pil_images, keywords, vision_client):
     page_data = []
-    regex_patterns = [re.compile(keyword_regex_pattern(k), re.IGNORECASE) for k in keywords]
+    regex_patterns = [keyword_regex_pattern(k) for k in keywords]
 
-    for idx, original_img in enumerate(pil_images):
-        print(f"\n📄 Pagina {idx+1}: analisi OCR in corso...")
-        resized = original_img.resize((int(original_img.width * 0.5), int(original_img.height * 0.5)))
-        img_np = np.array(resized)
+    for idx, image in enumerate(pil_images):
+        print(f"\n📄 Pagina {idx+1}: analisi OCR (Google Vision) in corso...")
+        img_byte_arr = BytesIO()
+        image.save(img_byte_arr, format='PNG')
+        content = img_byte_arr.getvalue()
 
         try:
-            result = ocr.ocr(img_np, cls=True)
-            raw_text = " ".join([line[1][0] for block in result if isinstance(block, list)
-                                  for line in block if isinstance(line, list)]) if result else ""
-            all_text = normalize_text(raw_text)
+            gimage = vision.Image(content=content)
+            response = vision_client.document_text_detection(image=gimage)
+            if response.error.message:
+                print(f"⚠️ Errore Google Vision nella pagina {idx+1}: {response.error.message}")
+                all_text = ""
+            else:
+                text = response.full_text_annotation.text if response.full_text_annotation else ""
+                all_text = normalize_text(text)
         except Exception as e:
             print(f"⚠️ Errore OCR nella pagina {idx+1}: {e}")
             all_text = ""
@@ -60,17 +62,13 @@ def rotate_and_score_pages_lowres(pil_images, keywords, ocr):
 
         page_data.append({
             "index": idx,
-            "original_image": original_img,
+            "original_image": image,
             "text": all_text,
             "keywords_found": match_count
         })
 
-        del img_np, resized
-        gc.collect()
-
     return page_data
 
-# Paso 3
 def find_best_rotated_page(pages_data):
     if not pages_data:
         return None, "", -1
@@ -81,32 +79,9 @@ def find_best_rotated_page(pages_data):
     print(f"✅ Pagina selezionata: {best['index']+1} con {best['keywords_found']} parole chiave.")
     return best["original_image"], best["text"], best["index"]
 
-# Paso 4
-def rotate_image_by_ocr_angle(image_pil, ocr):
-    try:
-        img_np = np.array(image_pil)
-        result = ocr.ocr(img_np, cls=True)
-        vertical_lines = 0
-        total_lines = 0
+def rotate_image_by_ocr_angle(image_pil, vision_client):
+    return image_pil  # puedes implementar rotación más adelante si lo deseas
 
-        for block in result:
-            for line in block:
-                (x1, y1), (x2, y2) = line[0][0], line[0][1]
-                angle = abs(np.arctan2(y2 - y1, x2 - x1) * 180 / np.pi)
-                if 75 <= angle <= 105:
-                    vertical_lines += 1
-                total_lines += 1
-
-        if total_lines == 0:
-            return image_pil
-
-        return image_pil.rotate(90, expand=True) if (vertical_lines / total_lines) > 0.6 else image_pil
-
-    except Exception as e:
-        print(f"⚠️ Errore durante la rotazione: {e}")
-        return image_pil
-    
-# Paso 5
 def call_gpt_image_with_text(image_pil, ocr_text, filename, valid_values, client):
     buffered = BytesIO()
     image_pil.save(buffered, format="PNG")
@@ -140,7 +115,7 @@ def call_gpt_image_with_text(image_pil, ocr_text, filename, valid_values, client
           "Fondo Spessore": "",
           "Qualita Fondo": ""
         }}
-        """
+    """
 
     try:
         response = client.chat.completions.create(
@@ -176,10 +151,9 @@ def call_gpt_image_with_text(image_pil, ocr_text, filename, valid_values, client
             "Fondo Spessore": "",
             "Qualita Fondo": ""
         }
-    
-# Paso 6
+
 def process_pdfs_in_folder(folder_path, keywords, valid_values, openai_key, progress_callback=None):
-    ocr = PaddleOCR(use_angle_cls=True, lang='it', show_log=False)
+    vision_client = vision.ImageAnnotatorClient()
     client = openai.OpenAI(api_key=openai_key)
     final_data = []
     pdf_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".pdf")]
@@ -194,10 +168,10 @@ def process_pdfs_in_folder(folder_path, keywords, valid_values, openai_key, prog
             if not images:
                 raise Exception("Nessuna pagina estratta.")
 
-            pages_data = rotate_and_score_pages_lowres(images, keywords, ocr)
+            pages_data = rotate_and_score_pages_lowres(images, keywords, vision_client)
             target_image, ocr_text, _ = find_best_rotated_page(pages_data)
             if target_image:
-                rotated_target = rotate_image_by_ocr_angle(target_image, ocr)
+                rotated_target = rotate_image_by_ocr_angle(target_image, vision_client)
                 extracted = call_gpt_image_with_text(rotated_target, ocr_text, pdf_file, valid_values, client)
             else:
                 extracted = {

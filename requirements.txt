@@ -1,12 +1,8 @@
 streamlit
-paddleocr==2.10.0
-paddlepaddle -f https://www.paddlepaddle.org.cn/whl/windows/mkl/avx/stable.html
 PyMuPDF
 pillow
 numpy
 pandas
 openai
-tqdm
-setuptools
+google-cloud-vision
 openpyxl
-opencv-python-headless
