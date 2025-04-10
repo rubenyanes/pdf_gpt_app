@@ -64,7 +64,7 @@ st.markdown("""
 st.markdown("<div class='centered-text'>Estrai automaticamente i dati tecnici (Spessore e Materiale di Fasciame e Fondo) da specifiche PDF usando OCR + Openai GPT-4o.</div>", unsafe_allow_html=True)
 
 # ---------------------- Inputs utente ----------------------
-folder_path = st.text_input("📂 Inserisci il percorso della cartella con i PDF", placeholder="C:\\Percorso\\Cartella\\PDF")
+uploaded_files = st.file_uploader("📂 Carica uno o più PDF", type=["pdf"], accept_multiple_files=True)
 
 # ---------------------- Caricamento credenziali Google Vision ----------------------
 st.markdown("🔐 **Carica il file di credenziali JSON di Google Cloud Vision**")
@@ -116,8 +116,8 @@ with col2:
 
 # ---------------------- Logica di elaborazione ----------------------
 if st.session_state.get('start_process', False):
-    if not folder_path or not openai_key or not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-        st.error("❌ Devi inserire la cartella, la API key di OpenAI e caricare le credenziali Google.")
+    if not uploaded_files or not openai_key or not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        st.error("❌ Devi caricare almeno un PDF, inserire la tua API key di OpenAI e le credenziali di Google Vision.")
         st.session_state['start_process'] = False
     else:
         with st.spinner("Elaborazione dei PDF in corso..."):
@@ -129,7 +129,7 @@ if st.session_state.get('start_process', False):
                 progress_placeholder.markdown(f"### ⏳ Elaborazione: {idx}/{total} PDF")
 
             try:
-                df = process_pdfs_in_folder(folder_path, keywords, valid_values, openai_key, stream_progress)
+                df = process_pdfs_in_folder(uploaded_files, keywords, valid_values, openai_key, stream_progress)
 
                 df = df.rename(columns={
                     "Nome": "Nome PDF",

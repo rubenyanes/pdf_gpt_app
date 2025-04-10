@@ -11,6 +11,7 @@ import gc
 import re
 import unicodedata
 from google.cloud import vision
+import tempfile
 
 def pdf_to_images(pdf_path):
     images = []
@@ -152,19 +153,23 @@ def call_gpt_image_with_text(image_pil, ocr_text, filename, valid_values, client
             "Qualita Fondo": ""
         }
 
-def process_pdfs_in_folder(folder_path, keywords, valid_values, openai_key, progress_callback=None):
+def process_pdfs_in_folder(uploaded_files, keywords, valid_values, openai_key, progress_callback=None):
     vision_client = vision.ImageAnnotatorClient()
     client = openai.OpenAI(api_key=openai_key)
     final_data = []
-    pdf_files = [f for f in os.listdir(folder_path) if f.lower().endswith(".pdf")]
 
-    for idx, pdf_file in enumerate(pdf_files, 1):
+    for idx, uploaded_file in enumerate(uploaded_files, 1):
         if progress_callback:
-            progress_callback(idx, len(pdf_files))
-        print(f"\n📂 ({idx}/{len(pdf_files)}) Elaborazione: {pdf_file}")
-        pdf_path = os.path.join(folder_path, pdf_file)
+            progress_callback(idx, len(uploaded_files))
+        print(f"\n📂 ({idx}/{len(uploaded_files)}) Elaborazione: {uploaded_file.name}")
+        
         try:
-            images = pdf_to_images(pdf_path)
+            # Guarda temporalmente el archivo en disco para que fitz pueda leerlo
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                tmp_file.write(uploaded_file.read())
+                tmp_pdf_path = tmp_file.name
+
+            images = pdf_to_images(tmp_pdf_path)
             if not images:
                 raise Exception("Nessuna pagina estratta.")
 
@@ -172,10 +177,10 @@ def process_pdfs_in_folder(folder_path, keywords, valid_values, openai_key, prog
             target_image, ocr_text, _ = find_best_rotated_page(pages_data)
             if target_image:
                 rotated_target = rotate_image_by_ocr_angle(target_image, vision_client)
-                extracted = call_gpt_image_with_text(rotated_target, ocr_text, pdf_file, valid_values, client)
+                extracted = call_gpt_image_with_text(rotated_target, ocr_text, uploaded_file.name, valid_values, client)
             else:
                 extracted = {
-                    "Nome": pdf_file,
+                    "Nome": uploaded_file.name,
                     "Fasciame Spessore": "",
                     "Qualita Fasciame": "",
                     "Fondo Spessore": "",
@@ -185,9 +190,9 @@ def process_pdfs_in_folder(folder_path, keywords, valid_values, openai_key, prog
             final_data.append(extracted)
 
         except Exception as e:
-            print(f"❌ Errore nel file {pdf_file}: {e}")
+            print(f"❌ Errore nel file {uploaded_file.name}: {e}")
             final_data.append({
-                "Nome": pdf_file,
+                "Nome": uploaded_file.name,
                 "Fasciame Spessore": "",
                 "Qualita Fasciame": "",
                 "Fondo Spessore": "",
