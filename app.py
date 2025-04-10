@@ -63,12 +63,16 @@ st.markdown("""
 
 st.markdown("<div class='centered-text'>Estrai automaticamente i dati tecnici (Spessore e Materiale di Fasciame e Fondo) da specifiche PDF usando OCR + Openai GPT-4o.</div>", unsafe_allow_html=True)
 
+# ---------------------- Separatore visivo ----------------------
+st.markdown("<hr style='margin-top:1.5rem; margin-bottom:1.5rem;'>", unsafe_allow_html=True)
+
 # ---------------------- Inputs utente ----------------------
-uploaded_files = st.file_uploader("📂 Carica uno o più PDF", type=["pdf"], accept_multiple_files=True)
+st.markdown("📂 **Carica uno o più file PDF**", unsafe_allow_html=True)
+uploaded_files = st.file_uploader("", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed")
 
 # ---------------------- Caricamento credenziali Google Vision ----------------------
 st.markdown("🔐 **Carica il file di credenziali JSON di Google Cloud Vision**")
-uploaded_cred = st.file_uploader("Seleziona il file .json delle credenziali", type=["json"])
+uploaded_cred = st.file_uploader("", type=["json"], label_visibility="collapsed")
 
 if uploaded_cred is not None:
     try:
