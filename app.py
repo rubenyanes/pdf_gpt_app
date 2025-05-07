@@ -68,11 +68,11 @@ st.markdown("<hr style='margin-top:1.5rem; margin-bottom:1.5rem;'>", unsafe_allo
 
 # ---------------------- Inputs utente ----------------------
 st.markdown("📂 **Carica uno o più file PDF**", unsafe_allow_html=True)
-uploaded_files = st.file_uploader("", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed")
+uploaded_files = st.file_uploader("Carica uno o più file PDF", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed", key="upload_pdfs")
 
 # ---------------------- Caricamento credenziali Google Vision ----------------------
 st.markdown("🔐 **Carica il file di credenziali JSON di Google Cloud Vision**")
-uploaded_cred = st.file_uploader("", type=["json"], label_visibility="collapsed")
+uploaded_cred = st.file_uploader("Carica il file di credenziali JSON", type=["json"], label_visibility="collapsed", key="upload_creds")
 
 if uploaded_cred is not None:
     try:
