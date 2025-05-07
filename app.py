@@ -79,7 +79,7 @@ st.markdown("<hr style='margin-top:1.5rem; margin-bottom:1.5rem;'>", unsafe_allo
 
 # ---------------------- Inputs utente ----------------------
 st.markdown("📂 **Carica uno o più file PDF**", unsafe_allow_html=True)
-uploaded_files = st.file_uploader("Carica uno o più file PDF", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed", key="upload_pdfs")
+uploaded_files = st.file_uploader("Carica uno o più file PDF", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed", key=f"upload_pdfs_{unique_id}")
 
 # ---------------------- Validación de PDF ----------------------
 valid_files = []
@@ -101,7 +101,7 @@ uploaded_files = valid_files
 
 # ---------------------- Caricamento credenziali Google Vision ----------------------
 st.markdown("🔐 **Carica il file di credenziali JSON di Google Cloud Vision**")
-uploaded_cred = st.file_uploader("Carica il file di credenziali JSON", type=["json"], label_visibility="collapsed", key="upload_creds")
+uploaded_cred = st.file_uploader("Carica il file di credenziali JSON", type=["json"], label_visibility="collapsed", key=f"upload_cred_{unique_id}")
 
 if uploaded_cred is not None:
     try:
