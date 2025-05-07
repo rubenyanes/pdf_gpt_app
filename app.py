@@ -132,8 +132,6 @@ with col1:
     if st.button("🚀 Avvia Elaborazione"):
         st.session_state['start_process'] = True
         st.session_state['stop_process'] = False
-        st.write("🟢 Bottone Avvia premuto")
-        print("🟢 Bottone Avvia premuto")
 
 with col2:
     if st.button("🛑 Ferma Elaborazione"):
@@ -143,14 +141,7 @@ with col2:
 
 # ---------------------- Logica di elaborazione ----------------------
 if st.session_state.get('start_process', False):
-    st.write("🚀 Avvio elaborazione confermato")
-    print("🚀 Avvio elaborazione confermato")
     if not uploaded_files or not openai_key or not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-        st.write("❌ Uno dei requisiti non è stato soddisfatto")
-        print("❌ Blocco su validazione: missing file o chiavi")
-        st.write("📂 uploaded_files:", uploaded_files)
-        st.write("🔑 openai_key presente:", bool(openai_key))
-        st.write("🔐 Credenziali presenti:", os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None)
         st.error("❌ Devi caricare almeno un PDF, inserire la tua API key di OpenAI e le credenziali di Google Vision.")
         st.session_state['start_process'] = False
     else:

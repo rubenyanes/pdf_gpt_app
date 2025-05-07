@@ -165,6 +165,7 @@ def process_pdfs_in_folder(uploaded_files, keywords, valid_values, openai_key, p
         
         try:
             # Guarda temporalmente el archivo en disco para que fitz pueda leerlo
+            uploaded_file.seek(0)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
                 tmp_file.write(uploaded_file.read())
                 tmp_pdf_path = tmp_file.name
