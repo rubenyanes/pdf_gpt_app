@@ -8,6 +8,11 @@ from io import BytesIO
 import tempfile
 import json
 
+# ---------------------- Limpieza forzada del session_state para evitar errores de deserialización ----------------------
+for key in list(st.session_state.keys()):
+    if "upload" in key or "file" in key:
+        del st.session_state[key]
+
 # ---------------------- Configurazione della pagina ----------------------
 st.set_page_config(page_title="Estrazione Tecnica", layout="wide")
 
