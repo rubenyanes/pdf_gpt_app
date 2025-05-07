@@ -9,14 +9,6 @@ import tempfile
 import json
 import fitz
 
-# ---------------------- Limpieza forzada del session_state para evitar errores de deserialización ----------------------
-for k in list(st.session_state.keys()):
-    if "upload" in k or "file" in k:
-        try:
-            del st.session_state[k]
-        except:
-            pass
-
 # ---------------------- Configurazione della pagina ----------------------
 st.set_page_config(page_title="Estrazione Tecnica", layout="wide")
 
