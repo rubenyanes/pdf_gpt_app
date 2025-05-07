@@ -7,11 +7,17 @@ from functions import process_pdfs_in_folder
 from io import BytesIO
 import tempfile
 import json
+import uuid
+import fitz
 
 # ---------------------- Limpieza forzada del session_state para evitar errores de deserialización ----------------------
-for key in list(st.session_state.keys()):
-    if "upload" in key or "file" in key:
-        del st.session_state[key]
+for k in list(st.session_state.keys()):
+    if "upload" in k or "file" in k:
+        try:
+            del st.session_state[k]
+        except:
+            pass
+unique_id = str(uuid.uuid4())[:8]
 
 # ---------------------- Configurazione della pagina ----------------------
 st.set_page_config(page_title="Estrazione Tecnica", layout="wide")
@@ -75,6 +81,24 @@ st.markdown("<hr style='margin-top:1.5rem; margin-bottom:1.5rem;'>", unsafe_allo
 st.markdown("📂 **Carica uno o più file PDF**", unsafe_allow_html=True)
 uploaded_files = st.file_uploader("Carica uno o più file PDF", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed", key="upload_pdfs")
 
+# ---------------------- Validación de PDF ----------------------
+valid_files = []
+if uploaded_files:
+    for file in uploaded_files:
+        try:
+            file.seek(0)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(file.read())
+                tmp_path = tmp.name
+            fitz.open(tmp_path)  # Validación básica
+            valid_files.append(file)
+        except Exception as e:
+            st.warning(f"⚠️ Il file `{file.name}` non è un PDF valido: {e}")
+if uploaded_files and not valid_files:
+    st.stop()
+
+uploaded_files = valid_files
+
 # ---------------------- Caricamento credenziali Google Vision ----------------------
 st.markdown("🔐 **Carica il file di credenziali JSON di Google Cloud Vision**")
 uploaded_cred = st.file_uploader("Carica il file di credenziali JSON", type=["json"], label_visibility="collapsed", key="upload_creds")
@@ -92,9 +116,11 @@ if uploaded_cred is not None:
 else:
     st.warning("⚠️ Devi caricare il file delle credenziali per poter usare Google Vision OCR.")
 
+# ---------------------- OpenAI API Key ----------------------
 st.markdown("🔑 **OpenAI Api key** (https://platform.openai.com/api-keys)")
 openai_key = st.text_input("Inserisci la tua API Key", type="password")
 
+# ---------------------- Keywords e valid values ----------------------
 default_keywords = [
     'fasciame', 'fondo', 'fondi', 'materiali impiegati', 'spessore', 'KW', 'prove', 'Fe',
     'calotta', 'tronchetti', 'membratura','costruttore','temp','temperatura', 'qualita',
