@@ -66,7 +66,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='centered-text'>Estrai automaticamente i dati tecnici (Spessore e Materiale di Fasciame e Fondo) da specifiche PDF usando OCR + Openai GPT-4o.</div>", unsafe_allow_html=True)
+st.markdown("<div class='centered-text'>Estrai automaticamente i dati tecnici (Spessore e Materiale di Fasciame e Fondo) da specifiche PDF usando OCR + Openai GPT-4o</div>", unsafe_allow_html=True)
 
 # ---------------------- Separatore visivo ----------------------
 st.markdown("<hr style='margin-top:1.5rem; margin-bottom:1.5rem;'>", unsafe_allow_html=True)
