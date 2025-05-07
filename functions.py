@@ -54,7 +54,6 @@ def rotate_and_score_pages_lowres(pil_images, keywords, vision_client):
             else:
                 text = response.full_text_annotation.text if response.full_text_annotation else ""
                 all_text = normalize_text(text)
-                print(f"✅ OCR estratto (primi 300 caratteri): {all_text[:300]}")
         except Exception as e:
             print(f"⚠️ Errore OCR nella pagina {idx+1}: {e}")
             all_text = ""

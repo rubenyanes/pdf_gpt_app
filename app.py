@@ -152,7 +152,7 @@ if st.session_state.get('start_process', False):
                 if st.session_state.get('stop_process', False):
                     raise RuntimeError("⚠️ Elaborazione interrotta dall'utente.")
                 progress_placeholder.markdown(f"### ⏳ Elaborazione: {idx}/{total} PDF")
-
+            st.write("🔁 Iniziata elaborazione PDF")
             try:
                 df = process_pdfs_in_folder(uploaded_files, keywords, valid_values, openai_key, stream_progress)
 
