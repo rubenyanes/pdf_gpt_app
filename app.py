@@ -7,7 +7,6 @@ from functions import process_pdfs_in_folder
 from io import BytesIO
 import tempfile
 import json
-import uuid
 import fitz
 
 # ---------------------- Limpieza forzada del session_state para evitar errores de deserialización ----------------------
@@ -17,7 +16,6 @@ for k in list(st.session_state.keys()):
             del st.session_state[k]
         except:
             pass
-unique_id = str(uuid.uuid4())[:8]
 
 # ---------------------- Configurazione della pagina ----------------------
 st.set_page_config(page_title="Estrazione Tecnica", layout="wide")
@@ -79,7 +77,7 @@ st.markdown("<hr style='margin-top:1.5rem; margin-bottom:1.5rem;'>", unsafe_allo
 
 # ---------------------- Inputs utente ----------------------
 st.markdown("📂 **Carica uno o più file PDF**", unsafe_allow_html=True)
-uploaded_files = st.file_uploader("Carica uno o più file PDF", type=["pdf","PDF"], accept_multiple_files=True, label_visibility="collapsed", key=f"upload_pdfs_{unique_id}")
+uploaded_files = st.file_uploader("Carica uno o più file PDF", type=["pdf","PDF"], accept_multiple_files=True, label_visibility="collapsed", key="upload_pdfs")
 
 # ---------------------- Validación de PDF ----------------------
 valid_files = []
@@ -101,7 +99,7 @@ uploaded_files = valid_files
 
 # ---------------------- Caricamento credenziali Google Vision ----------------------
 st.markdown("🔐 **Carica il file di credenziali JSON di Google Cloud Vision**")
-uploaded_cred = st.file_uploader("Carica il file di credenziali JSON", type=["json","JSON"], label_visibility="collapsed", key=f"upload_cred_{unique_id}")
+uploaded_cred = st.file_uploader("Carica il file di credenziali JSON", type=["json","JSON"], label_visibility="collapsed", key="upload_cred")
 
 if uploaded_cred is not None:
     try:
